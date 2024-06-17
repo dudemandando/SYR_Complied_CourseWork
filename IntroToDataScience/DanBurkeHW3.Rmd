@@ -1,0 +1,205 @@
+---
+title: "DanBurkeHW3"
+author: "Dan Burke"
+date: "8/2/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dan Burke
+## IST 687 Homework 3 - Cleaning/munging	Dataframes
+## Assignment Due: 8/3/2021 
+## Submitted: 8/3/2021
+
+\newpage
+
+# Step	1:	Create	a	function	(named	readStates)	to	read	a	CSV	file	into	R
+
+Often,	in	data	science,	when	you	get	a	dataset,	it	is	not	in	the	exact	format	you	want/need.	
+So,	you	have	to	refine	the	dataset	into	something	more	useful	- this	is	often	called	“data	
+munging”.
+In	this	lab,	you	need	to	read	in	a	dataset	and	work	on	that	dataset	(in	a	dataframe)	so	that	it	
+can	be	useful. Then,	we	will	explore	the	distribution	within	the	dataset.
+Step	1:	Create	a	function	(named	readStates)	to	read	a	CSV	file	into	R
+
+## 1. Note	that	you	are	to	read	a	URL,	not	a	file	local	to	your	computer.
+## 2. The	file	is	a	dataset	on	state	populations	(within	the	United	States).
+The	URL	is:	
+					http://www2.census.gov/programs-surveys/popest/tables/2010-2011/state/totals/nst-est2011-01.csv
+Hint:	google	“read.csv”	and	“url”	with	respect	to	R	commands
+
+
+```{r Step One}
+
+readStates <- function(){
+  states <- read.csv("http://www2.census.gov/programs-surveys/popest/tables/2010-2011/state/totals/nst-est2011-01.csv")
+  return(states)
+}
+
+```
+
+# Step	2:	Clean	the	dataframe
+
+## 3. Note	the	issues	that	need	to	be	fixed	(removing	columns,	removing	rows,	changing column	names).
+
+## 4. Within	your	function,	make	sure	there	are	51	rows	(one	per	state	+	the	district	of Columbia).	Make	sure	there	are	only	5	columns with	the	columns	having	the following	names	(stateName,	 base2010,	base2011,Jul2010, Jul2011).
+```{r Step Two}
+
+readStates <- function(){
+  
+  states <- read.csv("http://www2.census.gov/programs-surveys/popest/tables/2010-2011/state/totals/nst-est2011-01.csv")
+  
+  #Capture only the States and populations, ignoring the "NA" Values
+  states <- states[9:59,1:5]
+  
+  #Set Up for Looping through and renaming
+  startYear <- 2010
+  oldColNames <- colnames(states)
+  newColNames <- c("stateName",	 "base2010",	"base2011","Jul2010", "Jul2011")
+  
+  #Loop through for the length of the Column Names and rename
+  for(i in 0:length(colnames(states))){
+    names(states)[names(states) == oldColNames[i]] = newColNames[i]
+  }
+
+  return(states)
+}
+
+```
+
+## 5. Make	sure	the	last	four	columns	are	numbers	(i.e.	not	strings).
+```{r Step Two Continued}
+
+readStates <- function(){
+  
+  states <- read.csv("http://www2.census.gov/programs-surveys/popest/tables/2010-2011/state/totals/nst-est2011-01.csv")
+  
+  #Capture only the States and populations, ignoring the "NA" Values
+  states <- states[9:59,1:5]
+  
+  #Set Up for Looping through and renaming
+  startYear <- 2010
+  oldColNames <- colnames(states)
+  newColNames <- c("stateName",	 "base2010",	"base2011","Jul2010", "Jul2011")
+  
+  #Loop through for the length of the Column Names and rename
+  for(i in 0:length(colnames(states))){
+    names(states)[names(states) == oldColNames[i]] = newColNames[i]
+  }
+  
+  #Also cleaning up the '.' before each state name
+states$stateName <- gsub("[:.:]","",states$stateName)
+
+#Converting to numeric
+states$base2010 <- as.numeric(gsub(",","",states$base2010))
+states$base2011 <- as.numeric(gsub(",","",states$base2011))
+states$Jul2010 <- as.numeric(gsub(",","",states$Jul2010))
+states$Jul2011 <- as.numeric(gsub(",","",states$Jul2011))
+
+sapply(states, class)
+  
+
+  return(states)
+}
+
+
+```
+
+# Step	3:	Store	and	Explore	the	dataset
+
+## 6. Store		the dataset	into	a	dataframe,	called	dfStates.
+```{r Step Three}
+
+dfStates <- data.frame(readStates())
+
+```
+
+## 7. Test	your	dataframe	by	calculating	the	mean	for	the	July2011	data,	by	doing:
+mean(dfStates$Jul2011)
+		 à you	should	get	an	answer	of		6,109,645
+		 
+```{r Step Three Continued}
+
+mean(dfStates$Jul2011)
+
+```
+
+# Step	4:	 Find	the	state	with	the	Highest	Population	
+
+## 8. Based	on	the	July2011	data,	what	is	the	population	of	the	state	with	the	highest	population?	What	is	the	name	of	that	state?
+```{r Step Four Part One}
+
+mostPopState <- dfStates[which.max(dfStates$Jul2011),]
+#State Name
+mostPopState$stateName
+
+#State Population
+mostPopState$Jul2011
+
+```
+## 9. Sort	the	data,	in	increasing	order,	based	on	the	July2011	data.	
+		 
+```{r Step Four Part Two}
+
+dfStates[order(dfStates$Jul2011),]
+
+```
+# Step	5:	 Explore	the	distribution	of	the	states
+
+## 10. Write	a	function	that	takes	two	parameters.	The	first	is	a	vector	and	the	second	is	a number.
+
+## 11. The	function	will	return	the	percentage	of	the	elements	within	the	vector	that	is	less than	the	same	(i.e.	the	cumulative	distribution	below	the	value	provided).
+
+## 12. For	example,	if	the	vector	had	5	elements	(1,2,3,4,5), with	2	being	the	number passed	into	the	function,	the	function	would	return	0.2	(since	20%	of	the	numbers	were	below	2).
+
+## 13. Test	the	function	with	the	vector	‘dfStates$Jul2011Num’, and	the	mean	of dfStates$Jul2011Num’.
+
+```{r Step Four Part Three}
+
+# 10 through 13 answers will be included within this code block.
+testVector <- c(1,2,3,4,5)
+
+ExploreDist <- function(vec, i){
+  return(sum(vec < i)/length(vec))
+
+
+}
+
+#Test The Function as stated
+ExploreDist(testVector, 2)
+
+#Testing with dfStates
+
+ExploreDist(dfStates$Jul2011, mean(dfStates$Jul2011))
+
+
+
+
+```
+
+There	are	many	ways	to	write	this	function	(described	in	#10	above)	– so	please	try	to	
+write	multiple	versions	of	this	function	– which	do	you	think	is	best?
+```{r Another Way}
+
+
+ExploreDistOtherWay <- function(vec, i){
+boolList <-vec < i
+trueCount <- length(boolList[boolList==TRUE])
+return(trueCount/length(vec))
+}
+  
+#Test Alternative
+ExploreDistOtherWay(testVector,2)
+ExploreDistOtherWay(dfStates$Jul2011, mean(dfStates$Jul2011))
+```		 
+There are many ways to approach writing this function, however two important aspects come to mind. First, readability. When writing a function or any code, the author will want to construct it in such a way that it is easy for others to quickly read and understand. Second is efficency. A user could write a function which creates additional vectors and variables, however this will decrease efficiency and increase memory usage. In this assignment the datasets are small and memory utilization is not much of a concern, however within an production/comercial enviroment it has the potential quickly or immediately become an issue.  
+		 
+		 
+		 
+		 
+		 
+		 
+		 

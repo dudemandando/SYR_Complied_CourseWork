@@ -1,0 +1,151 @@
+---
+title: "IST687 "
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dan Burke
+## Homework 4 - Samples	HW
+## Assignment Due: 8/10/2021 
+## Submitted: 8/11/2021
+
+\newpage
+
+
+# Step	1:	Write	a	summarizing	function	to	understand	the	distribution	of	a	vector
+## 1. The	function,	call	it	‘printVecInfo’ should	take	a	vector	as	input
+## 2. The	function	should	print	the	following	information:
+      a. Mean
+      b. Median
+      c. Min	&	max
+      d. Standard	deviation
+      e. Quantiles	(at	0.05	and	0.95)
+      f. Skewness
+      
+      Note	for	skewness,	you	can	use	the	function	in	the	‘moments’	library
+      
+```{r Step One}
+
+#if Moments Package is not installed 
+#install.packages(("moments"))
+library(moments)
+
+printVecInfo <- function(vec){
+  #mean
+  print( paste("Mean: ", mean(vec), sep=" "))
+  
+  #Median
+  print(paste("Median: ", median(vec, na.rm=FALSE), sep=" "))
+  
+  #Min & Max
+  print(paste("Min: ", min(vec), sep=" "))
+  print(paste("Max: ", max(vec), sep=" "))
+
+  #standard Deviation
+  print(paste("Standard Deviation: ", sd(vec), sep=" "))
+  #(0.05 & 0.95)
+  print(paste("Quantile (0.05 - 0.95): ", quantile(vec, 0.05, 0.95), sep=" "))
+
+  #skewness
+  print(paste("Skewness: ", skewness(vec), sep=" "))
+}
+
+
+
+```
+## 3. Test	the	function	with	a	vector	that	has	(1,2,3,4,5,6,7,8,9,10,50).	You	should	see	
+something	such	as:
+[1]	"mean:	9.54545454545454"
+[1]	"median:	6"
+[1]	"min:	1		max:	50"
+[1]	"sd:	13.7212509368762"
+[1]	"quantile	(0.05	- 0.95):	1.5	-- 30"
+[1]	"skewness:	2.62039633563579"
+
+```{r Test the Function}
+test <- c(1,2,3,4,5,6,7,8,9,10,50)
+printVecInfo(test)
+
+```
+# Step	2:	Creating	Samples	in	a	Jar
+## 4. Create	a	variable	‘jar’	that	has	50	red	and	50	blue	marbles (hint:	the	jar	can	have	strings	as	objects,	with	some	of	the	strings	being	‘red’	and some	of	the	strings	being	‘blue’
+```{r Step Two}
+#Create the Vector of the initial types of marbles
+jar <- c("red","blue")
+#Replicate the starting jar 50 times to arrive at 100 total marbles (50	red	and	50	blue)
+jar <- rep(jar,50)
+
+length(jar)
+
+
+```
+
+## 5. Confirm	there	are	50	reds	by	summing	the	samples	that	are	red
+```{r Confirm 50 Reds}
+length(which(jar == "red"))
+
+```
+
+
+## 6. Sample	10	‘marbles’	(really	strings)	from	the	jar.	How	many	are	red?	What	was	the	percentage	of	red	marbles?
+
+```{r Sample of 10}
+
+#Create and Store Sample of 10 Marbles
+redInSample <- length(which(sample(jar, size=10,replace = TRUE) == "red"))
+# % of Red
+print(paste("% of Red: ", redInSample/10, sep=" "))
+
+
+```
+
+## 7. Do	the	sampling	20	times,	using	the	‘replicate’	command.	This	should	generate	a	list	of	20	numbers.	Each	number	is	the	mean	of	how	many	reds	there	were	in	10	samples.	Use	your	printVecInfo to	see	information	of	the	samples.	Also	generate	a	histogram	of	the	samples.
+
+```{r Replicate 20 Times}
+twentySamples <- replicate(20, length(which(sample(jar, size=10,replace = TRUE) == "red")))
+printVecInfo(twentySamples)
+hist(twentySamples)
+
+
+```
+
+
+## 8. Repeat	#7,	but	this	time,	sample	the	jar	100	times.	You	should	get	20 numbers,	this	time	each	number	represents	the	mean	of	how	many	reds	there	were	in	the	100 samples.	Use	your	printVecInfo	to	see	information	of	the	samples.	Also	generate	a	histogram	of	the	samples.
+```{r Replicate 100 Times}
+oneHundredSamples <- replicate(100, length(which(sample(jar, size=10,replace = TRUE) == "red")))
+printVecInfo(oneHundredSamples)
+hist(oneHundredSamples)
+
+```
+
+# Step	3:	Explore	the	airquality	dataset
+
+## 10. Store	the	‘airquality’	dataset	into	a	temporary	variable
+```{r Store The DataSet}
+airQual <- airquality
+airQual
+
+```
+## 11. Clean	the	dataset	(i.e.	remove	the	NAs)
+```{r Clean the Dataset}
+omittedAirQuality <- na.omit(airQual)
+
+```
+
+## 12. Explore	Ozone,	Wind	and	Temp	by	doing	a	‘printVecInfo’	on	each	as	well	as	generating	a	histogram	for	each
+
+```{r Explore}
+#Ozone
+printVecInfo(omittedAirQuality$Ozone)
+hist(omittedAirQuality$Ozone)
+#Wind
+printVecInfo(omittedAirQuality$Wind)
+hist(omittedAirQuality$Wind)
+#Temp
+printVecInfo(omittedAirQuality$Temp)
+hist(omittedAirQuality$Temp)
+
+```

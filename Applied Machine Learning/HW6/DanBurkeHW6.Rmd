@@ -1,0 +1,167 @@
+---
+title: "Hand Writing Recognition"
+author: "Dan Burke"
+date: "11/23/2021"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Data Ingestion
+
+First Data is imported then a subset of the data is selected as the full data set causes memory issues (first 5000 records selected). Data is verified to be complete and then formatted for first generating a decision tree model; most notable steps including formatting all attributes (except label) to be numeric and formatting the label attribute as factor. 
+```{r Data Ingestion}
+
+
+library(ggplot2)
+library(dplyr)
+library(caret)
+library(rpart)
+
+
+testData <- read.csv("test.csv")
+trainData <- read.csv("train.csv")
+
+#Reducing size of dataset due to memory issues. 
+testData <- trainData[5000:10000,]
+trainData <- trainData[1:5000,]
+
+#Check What Classes we are looking for
+unique(trainData$label)
+
+
+sum(!complete.cases(trainData))
+sum(!complete.cases(testData))
+
+dfColNames <- colnames(trainData)
+labels <- trainData[,1]
+
+#Convert to Numeric
+trainData_ <- mutate_all(trainData, as.numeric)
+testData_ <- mutate_all(testData, as.numeric)
+
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+
+#Scale/Normalize
+trainData_[,-1] <-range01(trainData_[,-1])
+testData_ <-range01(testData_)
+
+hist(trainData_$label)
+
+typeof(trainData_)
+typeof(testData_)
+
+
+```
+# Decision Tree First Pass And Second Pass
+
+Both first and second decision tree passes (second with tuning) do not provide a satisfactory accuracy (approximately 40%). There are multiple potential reasons for the poor performance; most likely not enough tuning or the data set subset chosen is too small to produce greater model accuracy.
+
+The second Decision tree pass did produce increased accuracy (approximately 70%). This is a great improvement that can predominenlty be attributed to the increased "tunelength" hyperparameter of 25.
+
+```{r Decision Tree}
+
+#Create DataFrame
+traindf <- data.frame(trainData_)
+testdf <- data.frame(testData_)
+traindf$label <- as.factor(traindf$label)
+
+typeof(traindf)
+typeof(testdf)
+
+#Set Seed to allow reproduction
+set.seed(2021)
+
+#create model First Pass
+
+#Capture Time taken to generate Model
+startDT <- Sys.time()
+dt_model <- train(label ~., data=traindf, method = "rpart")
+Sys.time() - startDT
+
+#Plot Final Model Model
+library(rpart.plot)
+
+print(dt_model)
+print(dt_model$finalModel)
+
+dt_predict <- predict(dt_model, newdata = testdf, na.action = na.omit, type="prob" )
+
+head(dt_predict, 5)
+
+dt_predict2 <- predict(dt_model, newdata = testdf, type="raw" )
+
+head(dt_predict2,5)
+
+
+#Second Pass - Tune Length set to 25
+
+ctrl <- trainControl(method ="cv", number= 10)
+
+startDT2 <- Sys.time()
+dt_modelTwo <- train(label ~., data=traindf, metric = "Accuracy", 
+                     method="rpart",
+                     trControl=ctrl,
+                     tuneLength = 25)
+Sys.time()-startDT2
+
+dt_modelTwo
+print(dt_modelTwo$results)
+rpart.plot(dt_modelTwo$finalModel)
+
+```
+# Naive Bayes
+Within the following code blocks I attempt two passes at generating models with the Naive Bayes algorithm. Within these passes in order to produce a confusion matrix I select only from the "train.csv", 9000 records for training and 6000 records for testing. 
+
+The first pass produces much better results than the decision tree, 50% displayed within the confusion matrix and balanced accuracy ranging from 52-90% when broken down by specific class. These results are satisfactory in that this was not produced with the entirety of the data set, should a model be generated with a larger subset of data I expect an increase in balanced accuracy across all classes below 80%. 
+
+```{r Naive Bayes}
+
+library("ElemStatLearn")
+
+naive_traindf <- data.frame
+naive_train <- read.csv("train.csv")
+
+naive_traindf <- naive_train[1:9000,]
+naive_traindf$label <- as.factor(naive_traindf$label)
+naive_traindf <- data.frame(naive_traindf)
+
+
+naive_test<- read.csv("train.csv")
+naive_testdf <- naive_test[9001:15000,]
+
+testLables <- naive_test[9001:15000,1]
+testLables <- as.factor(testLables)
+
+
+
+library(klaR)
+library(e1071)
+startnb <- Sys.time()
+model_nb1 <- naiveBayes(label~., data = naive_traindf, method="nb", laplace =1)
+Sys.time() - startnb
+
+predict_nb <- predict(model_nb1, newdata=naive_testdf)
+confusionMatrix(predict_nb, testLables)
+
+```
+
+```{r Naive Bayes II}
+
+model_nb2 <- train(label~., data = naive_traindf, method="nb",
+                  trControl= trainControl(method="cv", number=2),
+                  tuneGrid=expand.grid(fL= 1:3, usekernel = c(TRUE, FALSE), adjust = 1:3)
+                  )
+model_nb2
+
+```
+
+# Conslusion
+Both algorithms were able to successfully produce a trained model, however the Naïve Bayes model greatly outperformed that of the decision tree (across all classifications). However, the Naïve Bayes models did require much more memory usage than that of the decision trees, so much that the tuned model (Naïve Bayes second pass) took upwards of 25 minutes in order to complete. The first pass at generating a Naïve Bayes model took significantly longer to generate a model (24 seconds as compared to 0.3 seconds) when examined beside the first two decision tree passes. 
+
+Stepping back examine each algorithm’s performance in the most general sense, a user should select the Naïve Bayes approach for (it’s accuracy) if and only if they either have the computational resources and their analysis is not time sensitive. Generally, the Naïve Bayes classifier is regarded as being less computationally demanding as compared to a Random Forest (for example) and requires less data. Should the user of this algorithm (as I needed due to memory constraints) only possess or only be able to utilize a smaller relative data set, this algorithm will likely perform satisfactorily. 
+Conducting handwritten digit recognition will likely produce high levels of variability within new data, the naïve bayes algorithm is best suited as compared to utilizing a decision tree and random forest.

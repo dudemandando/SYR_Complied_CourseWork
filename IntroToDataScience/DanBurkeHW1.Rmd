@@ -1,0 +1,129 @@
+---
+title: "IST 687"
+author: "Dan Burke"
+output: pdf_document
+---
+
+## Dan Burke
+## Homework 1
+## Assignment Due: 7/12/2021 
+## ReSubmitted: 7/19/2021
+Resubmitting to format properly.
+
+\newpage
+
+## Define	the	following	vectors,	which	represent	the	weight	and	height	of	people	on	a	particular	team	(in	inches	and	pounds):
+```{r Define Vectors}
+			height	<- c(59,60,61,58,67,72,70)
+			weight	<- c(150,140,180,220,160,140,130)
+			
+```
+Define	a	variable:
+```{r Define Variable}
+			a	<- 150
+```
+## Step	1:	Calculating	means
+
+## 1) Compute,	using	R,	the	average	height	(called	mean	in	R)
+```{r Average Height}
+averageHeight<-mean(height)
+averageHeight
+```
+
+## 2) Compute,	using	R,	the	average	weight	(called	mean	in	R)
+```{r Average Weight}
+averageWeight<-mean(weight)
+averageWeight
+
+```
+
+## 3) Calculate	the	length	of	the	vector	‘height’	and	‘weight’
+```{r Calcualte Length}
+heightQuantity<-length(height)
+weightQuantity<-length (weight)
+heightQuantity
+weightQuantity
+
+```
+
+## 4) Calculate	the	sum	of	the	heights
+```{r Calulate Sum of Heights}
+heightSum<-sum(height)
+heightSum
+
+```
+
+## 5) Compute	the	average of	both	height	and	weight,	by	dividing	the	sum (of	the	height	or	the	width,	as	appropriate),	by	the	length	of	the	vector.	How	does	this	compare	to	the	‘mean’	function?
+```{r Averages and Sums}
+computeHeightAverage<-(sum(height)/length(height))
+computeWeightAverage<-(sum(weight)/length(weight))
+computeHeightAverage
+computeWeightAverage
+
+```
+
+The computed mean abrove differs in that it only will return the mean no matter if there are missing or null values within the vector.Utilizing the man function allows a user to add parameters which allow for the dropping of some observations from both ends of the vector along with removing missing values from the input vector.
+
+
+## Step	2:	Using	max/min	functions
+```{r max and min}
+
+
+```
+
+## 6) Compute	the	max	height,	store	the	result	in	‘maxH’
+```{r Compute Max Height}
+maxH<-max(height)
+maxH
+```
+
+## 7) Compute	the	min	weight,	store	the	results	in	‘minW’
+```{r Compute the min Weight}
+minW<-min(weight)
+minW
+```
+
+## Step	3:	Vector	Math
+
+
+## 8) Create	a	new	vector,	which	is	the	weight	+	5	(every	person	gained	5	pounds)
+```{r Create new Vector}
+newWeight<-weight+5
+newWeight
+
+```
+
+## 9) Compute	the	weight/height	for	each	person,	using	the	new	weight	just created
+```{r New weight/height}
+newWeightHeight<-vector()
+
+for(i in 1:length(newWeight)){
+tempRatio<-(newWeight[i]/height[i])
+newWeightHeight[i]<-tempRatio
+}
+
+newWeightHeight
+```
+
+
+## Step	4:	Using	Conditional	if	statements
+
+## 10)Write	the	R	code	to	test	if	max	height is	greater	than	60	(output	“yes”	or	“no”)
+```{r Using Conditional Statements 1}
+if(maxH > 60){
+print("yes")
+}else{
+print("no")
+}
+```
+
+## 11)Write	the	R	code	to	if	min	weight is	greater	than	the	variable	‘a’	(output	“yes”	or	“no”)
+```{r Using Conditional Statements 2}
+if(minW > a){
+print("yes")
+}else{
+print("no")
+}
+
+```
+

@@ -1,0 +1,138 @@
+---
+title: "IST 707 HW3 Association Rules"
+author: "Dan Burke"
+date: "10/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preprocessing 
+
+```{r Look at the data}
+
+library(arules)
+library(arulesViz)
+
+#Import Data
+bankData = read.csv("C:\\Users\\danbu\\Desktop\\Applied Machine Learning\\Week Three\\bankdata_csv_all.csv")
+
+str(bankData)
+
+#remove ID Col, generate new working data frame "bankData_new"
+bankData_New = bankData[,2:12]
+
+hist(bankData$income)
+hist(bankData$children)
+range(bankData$children)
+
+```
+## Descritization, Generation of Transaction Data Object, Exploration of Frequent Items
+
+```{r Descritization}
+#Descritization
+var_to_discretize <- c("age", "income")
+
+bankData_New$age_grp <- discretize(bankData_New$age, method="frequency", breaks = 3,
+                                   labels = c("low", "medium", "high"), order= T)
+
+bankData_New$income_grp <- discretize(bankData_New$income, method="frequency", breaks = 3,
+                                   labels = c("low", "medium", "high"), order= T)
+boxplot(age ~age_grp, data=bankData_New)
+boxplot(income ~income_grp, data=bankData_New)
+
+
+#convert columns to Factors
+bankData_New$sex <- as.factor(bankData_New$sex)
+bankData_New$region <- as.factor(bankData_New$region)
+bankData_New$married <- as.factor(bankData_New$married)
+bankData_New$children <- discretize(bankData_New$income, method="frequency", breaks = 4,
+                                   labels = c("none", "one", "two", "three"), order= T)
+bankData_New$car <- as.factor(bankData_New$car)
+bankData_New$save_act <- as.factor(bankData_New$save_act)
+bankData_New$current_act <- as.factor(bankData_New$current_act)
+bankData_New$mortgage <- as.factor(bankData_New$mortgage)
+bankData_New$pep <- as.factor(bankData_New$pep)
+
+str(bankData_New)
+
+
+#Prepare Transaction Dataset
+
+trans_bankData <- as(bankData_New[,c(2,3,5,6,7,8,9,10,11)], "transactions")
+
+str(trans_bankData)
+
+frequent_items <- eclat(trans_bankData, parameter = list(support=0.4, minlen=2))
+length(frequent_items)
+inspect(frequent_items)
+
+itemFrequencyPlot(trans_bankData, type = "absolute", main = "Item frequency")
+
+```
+## Generate Rules From Transaction Data Object First Pass
+
+```{r Generate Rules form Transaction Dataset}
+
+rules_transactions <- apriori(trans_bankData,
+                              parameter = list(support=0.2,confidence=0.7))
+
+inspect(head(rules_transactions,15))
+
+
+
+rules_transactions_two <- apriori(trans_bankData, parameter = list(support = 0.2, confidence = 0.75, minlen=2))
+inspect(sort(rules_transactions_two, by = "lift", decreasing = T))
+
+
+#subset_rules <- which(colSums(is.subset(rules, rules)) > 1)
+#rules <- sort(rules[-subset_rules], by = "lift", decreasing = T)
+
+```
+## Rule Generation Second Pass -  Right Hand Side (RHS) defined as "pep=YES"
+
+```{r Define RHS as PEP YES}
+
+#pep yes
+rules <- apriori(data = trans_bankData, parameter = list(supp = 0.1, conf = 0.5),
+                 appearance = list(default = "lhs", rhs = "pep=YES"),
+                 control = list(verbose = F))
+
+
+#remove redundant rules
+#subset_rules <- which(colSums(is.subset(rules, rules)) > 1)
+#rules <- sort(rules[-subset_rules], by = "lift", descreasing = T)
+
+
+
+inspect(head(sort(rules, by = "lift", decreasing = T)))
+length(rules)
+summary(rules)
+
+plot(rules, measure = c("support", "lift"), shading = "confidence")
+```
+## Rule Generation Thrid Pass-  Right Hand Side (RHS) defined as "pep=no"
+```{r Define RHS as PEP NO}
+#pep no
+rules <- apriori(data = trans_bankData, parameter = list(supp = 0.2, conf = 0.5),
+                 appearance = list(default = "lhs", rhs = "pep=NO"),
+                 control = list(verbose = F))
+
+#remove redundant rules
+#subset_rules <- which(colSums(is.subset(rules, rules)) > 1)
+#rules <- sort(rules[-subset_rules], by = "lift", descreasing = T)
+
+
+
+inspect(sort(rules, by = "lift", decreasing = T))
+summary(rules)
+
+plot(rules, measure = c("support", "lift"), shading = "confidence")
+
+
+
+```
+
+

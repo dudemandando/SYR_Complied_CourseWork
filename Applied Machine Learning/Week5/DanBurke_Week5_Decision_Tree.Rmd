@@ -1,0 +1,199 @@
+---
+title: "Decision Tree Week 5"
+author: "Dan Burke"
+date: "11/9/2021"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Import, Prepare and Generation of First Test Model
+
+In the following code block, the Federalist Papers data is imported. Then prepared for model generation as well as constructing both training and testing data sets. The training data set is initially comprised of all known authored papers; specifically Madison, Hamilton and Jay. Secondly, the testing data set is comprised of federalist papers which possess the "HM" and "dispt" value for their author attribute. 
+
+In an attempt to explore the data broadly, "HM" and "dispt" valued ("author" attribute) papers  are included within the test data set to identify any trends of their potential predictions. Likewise Jay in included within the training data set to identify if any of the disputed papers show any tendency to Jay. 
+
+
+```{r KMeans}
+#load needed libraries
+library(stats)
+library(dplyr)
+library(ggplot2)
+library(ggfortify)
+library(caret)
+library(rpart)
+library(rattle)
+library(C50)
+library(ROCR)
+library(plyr)
+
+#Data Preparation
+
+fedpapers <- read.csv("C:\\Users\\danbu\\Desktop\\Applied Machine Learning\\Week 4\\HW4\\fedPapers85.csv")
+
+#check for Complete Cases
+sum(!complete.cases(fedpapers))
+
+#drop the file name column
+fedpapers <- fedpapers[, !names(fedpapers) %in% c("filename")]
+
+fedpapers <- fedpapers[fedpapers$author == "Hamilton" | fedpapers$author == "Madison" | fedpapers$author == "Jay" | fedpapers$author == "dispt" |fedpapers$author == "HM" ,]
+
+data_train <- fedpapers[fedpapers$author == "Hamilton" | fedpapers$author == "Madison" | fedpapers$author == "Jay",]
+data_test <- fedpapers[fedpapers$author == "HM" | fedpapers$author == "dispt",]
+
+
+sum(!complete.cases(data_train))
+sum(!complete.cases(data_test))
+
+data_train <- droplevels(data_train)
+data_test <- droplevels(data_test)
+
+dim(data_train)
+dim(data_test)
+
+
+papers_model <- train(author ~ ., data= data_train, metric="Accuracy", method="rpart")
+print(papers_model)
+library(rpart.plot)
+rpart.plot(papers_model$finalModel)
+
+```
+
+```{r predict_first pass}
+
+papers_predict<- predict(papers_model, newdata = data_test, na.action = na.omit, type ="prob")
+print(papers_predict)
+
+```
+
+
+
+```{r predict_first_Pass raw}
+papers_predict_raw <- predict(papers_model, newdata = data_test, na.action = na.omit, type ="raw")
+print(papers_predict_raw)
+```
+# First Pass Model Tuning
+
+After examining the first pass model's output, it appears that given relatively stock hyper-parameters this model predicts all disputed papers to be authored by Madison. Below multiple passes were made adjusting the "tunelength"hyper-parameters. A "tunelength" value of '9' produced the greatest accuracy values (see below).
+
+
+```{r First Pass Model tuning}
+
+papers_model_prob_tuned <- train(author ~., data= data_train, method = "rpart",
+                                 metric = "Accuracy",
+                                 tuneLength= 8)
+
+print(papers_model_prob_tuned$finalModel)
+
+rpart.plot(papers_model_prob_tuned$finalModel)
+rpart.plot(papers_model_prob_tuned$finalModel, fallen.leaves = FALSE)
+predict_firstPass_tuned <- predict(papers_model_prob_tuned, newdata = data_test, na.action = na.omit, type ="prob")
+
+print(predict_firstPass_tuned)
+
+
+```
+# Second Pass - Decision Tree, Omission of "Jay"
+
+Understanding the the context of the data is important. These disputed papers are thought by historians and subject matter experts to have been authored either by Hamilton or Madison. With this context in mind I generate new trees with rows which are authored by Jay, omitted. 
+
+The omission of Jay, offers similar results to the first pass, all "dispt" and "HM" author attribute examples are found to be likely authored by Madison with a probability of approximatly 94 percent. 
+
+```{r removal of Jay}
+#Omit rows where Jay is believed to be the author
+data_train <- fedpapers[fedpapers$author == "Hamilton" | fedpapers$author == "Madison",]
+data_test <- fedpapers[fedpapers$author == "HM" | fedpapers$author == "dispt",]
+
+
+sum(!complete.cases(data_train))
+sum(!complete.cases(data_test))
+
+data_train <- droplevels(data_train)
+data_test <- droplevels(data_test)
+
+dim(data_train)
+dim(data_test)
+papers_model <- train(author ~ ., data= data_train, metric="Accuracy", method="rpart")
+print(papers_model$finalModel)
+
+fancyRpartPlot(papers_model$finalModel)
+
+papers_predict<- predict(papers_model, newdata = data_test, na.action = na.omit, type ="prob")
+print(papers_predict)
+
+```
+
+
+```{r predict raw}
+papers_predict_raw <- predict(papers_model, newdata = data_test, na.action = na.omit, type ="raw")
+print(papers_predict_raw)
+
+
+```
+
+# Decision Tree Second Pass Tuning
+
+Again with the second model, we find that the single word "upon" is the most important attribute to predict authorship by Hamilton or Madison. 
+
+We continue further with tuning and pre-pruning.
+
+```{r second pass tuning}
+data_train <- fedpapers[fedpapers$author == "Hamilton" | fedpapers$author == "Madison",]
+data_test <- fedpapers[fedpapers$author == "dispt",]
+
+
+ctrl <- trainControl(method = "cv", number=10)
+
+papers_model_prob_tuned <- train(author ~., data= data_train, method = "rpart",
+                                 metric = "Accuracy",
+                                 tuneLength = 9)
+
+
+
+rpart.plot(papers_model_prob_tuned$finalModel)
+print(papers_model_prob_tuned$finalModel)
+#summary(papers_model_prob_tuned)
+predict_secondPass_tuned <- predict(papers_model_prob_tuned, newdata = data_test, na.action = na.omit, type ="prob")
+
+print(predict_secondPass_tuned)
+
+```
+
+# Pre-pruning
+In the following code block I attempt (though unsuccessful) to pre-prune the data in order to induce and observe a change in the required frequency of of "upon'. This may be due to many factors, either experimentation with hyper-parameters was not extensive enough, and or exclusion of Jay authored papers from the data set may  have shortened the data set so much as to decrease complexity of the decision tree. 
+```{r prepruning}
+
+papers_model_preprune <- train(author ~., data = data_train, method="rpart",
+                               metric ="Accuracy",
+                               tuneLength=8,
+                               control=rpart.control(minsplit = 50, minbucket = 5, maxdepth = 8))
+
+print(papers_model_preprune$finalModel)
+#summary(papers_model_preprune$finalModel)
+rpart.plot(papers_model_preprune$finalModel)
+predict_preprune <-predict(papers_model_preprune, newdata = data_test, na.action = na.omit, type ="prob")
+print(predict_preprune)
+```
+
+# Post Pruning
+
+Below I attempt to preprune the tuned first pass model. Unfortunately this does not result in any increase or decrease within the predicted outcome. 
+
+```{r postprune}
+
+papers_model_postprune <- prune(papers_model_prob_tuned$finalModel, cp = 0.01)
+print(papers_model_postprune)
+preprunepredict <- predict(papers_model_postprune, newdata = data_test, na.action = na.omit, type ="prob")
+print(preprunepredict)
+```
+
+# Conclusion
+
+After exploring this data set and generating multiple decisions trees, both tuned, pre-pruned and post-pruned, it is most likely the authorship of disputed Federalist papers belongs to Madison; given these specific models and their outputs that. Given the opportunity to append the current data with additional data such as other works known to be both authored by Hamilton and Madison, a more comprehensive, broad and potentially, more accurate model may be generated. 

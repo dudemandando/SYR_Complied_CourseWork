@@ -1,0 +1,148 @@
+---
+title: "DanBurkeHW5"
+author: "Dan Burke"
+date: "8/16/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dan Burke
+## IST687
+## Homework 5 - JSON	&	tapply Homework:	Accident	Analysis
+## Assignment Due: 8/16/2021 
+## Submitted: 8/16/2021
+
+# Step	1:	Load	the	data
+Read	in	the	following	JSON	dataset
+http://data.maryland.gov/api/views/pdvh-tf2u/rows.json?accessType=DOWNLOAD
+```{r Step 1}
+
+#The url provided in Step 1 is broken, I've used the following link provided by a classmate (via Slack General Chat)
+#https://opendata.maryland.gov/api/views/pdvh-tf2u/rows.json?accessType=DOWNLOAD
+
+#Install Needed Libraries
+#install.packages("jsonlite")
+#install.packages("RJSONIO")
+#install.packages("RCurl")
+
+#Load the Libraries
+library(RCurl)
+library(RJSONIO)
+library(jsonlite)
+library(httr)
+library(knitr)
+
+url <- "https://opendata.maryland.gov/api/views/pdvh-tf2u/rows.json?accessType=DOWNLOAD"
+
+
+#SSL issues require utilizing the httr lib
+jsonData <- fromJSON(url)
+jsonData <- jsonData$data
+
+dfMd <- data.frame(jsonData)
+
+```
+
+# Step	2:	Clean	the	data
+After	you	load	the	data,	remove	the	first	8	columns,	and	then,	to	make	it	easier	to	work	
+with,	name	the	rest	of	the	columns	as	follows:
+Note,	not	surprisingly, it	is	in	JSON	format.		You	should	be	able	to	see	that	the	first	result	is	
+the	metadata	(information	about	the	data)	and	the	second	is	the	actual	data.
+
+
+```{r Step 2}
+#Removing the First 8 Columns
+dfMd <- dfMd[, -c(1:8)]
+
+
+#Renaming the Columns
+
+namesOfColumns <-c("CASE_NUMBER","BARRACK","ACC_DATE","ACC_TIME","ACC_TIME_CODE","DAY_OF_WEEK",
+"ROAD","INTERSECT_ROAD","DIST_FROM_INTERSECT","DIST_DIRECTION","CITY_NAME",
+"COUNTY_CODE","COUNTY_NAME","VEHICLE_COUNT","PROP_DEST","INJURY","COLLISION_WITH_1","COLLISION_WITH_2")
+
+colnames(dfMd) <-namesOfColumns
+
+#Trust, but Verify with a couple rows
+colnames(dfMd)
+
+print(kable(dfMd[1:3,1:5]))
+
+```
+
+# Step	3:	Understand	the	data	using	SQL	(via	SQLDF)
+Answer	the	following	questions:
+• How	many	accidents	happen	on	SUNDAY		
+• How	many	accidents	had	injuries (might	need	to	remove	NAs	from	the	data)
+• List	the	injuries	by	day
+
+```{r Step 3 Using SQL Via SQLDF}
+
+
+
+#How	many	accidents	happen	on	SUNDAY
+#need to clean it up 
+library(sqldf)
+dfMd$DAY_OF_WEEK <- trimws(dfMd$DAY_OF_WEEK)
+sundayCases <- sqldf("select count(CASE_NUMBER) from dfMd where DAY_OF_WEEK == 'SUNDAY'")
+sundayCases
+
+
+#How	many	accidents	had	injuries (might	need	to	remove	NAs	from	the	data)
+
+#Check for NAs
+dfMd$INJURY <- trimws(dfMd$INJURY)
+sum(is.na(dfMd$INJURY))
+dfMd$INJURY[which(is.na(dfMd$INJURY))] <- "NO"
+
+sqldf("select count(INJURY) from dfMd where INJURY == 'YES'")
+
+
+#List	the	injuries	by	day
+sqldf("select DAY_OF_WEEK, Count(CASE_NUMBER) from dfMd where INJURY == 'YES' group by DAY_OF_WEEK")
+
+
+```
+# Step	4:	Understand	the	data	using	tapply
+Answer	the	following	questions:
+• How	many	accidents	happen	on	SUNDAY	
+• How	many	accidents	had	injuries (might	need	to	remove	NAs	from	the	data)
+• List	the	injuries	by	day
+
+```{r Step 3 Using tapply}
+
+#How	many	accidents	happen	on	SUNDAY
+#need to clean it up 
+dfMd$DAY_OF_WEEK <- trimws(dfMd$DAY_OF_WEEK)
+cases <- paste("Accidents on Sunday (Not tapply to check):", length(which(dfMd$DAY_OF_WEEK == "SUNDAY")))
+cases
+
+#Using tapply
+sundayAcci <- tapply(dfMd$CASE_NUMBER, dfMd$DAY_OF_WEEK == "SUNDAY", length)
+cases <- paste("Accidents on Sunday (with tapply):", sundayAcci[2])
+cases
+
+
+#How	many	accidents	had	injuries (might	need	to	remove	NAs	from	the	data)
+
+#Check for NAs
+sum(is.na(dfMd$INJURY))
+dfMd$INJURY[10398] <- "NO"
+
+casesInj <- paste("Accidents with injuries (Not tapply to check):",length(which(dfMd$INJURY == "YES")))
+print(casesInj)
+
+injuryAcci <- tapply(dfMd$INJURY, dfMd$INJURY == "YES", length)
+
+casesInj <- paste("Accidents with injuries (with tapply):",injuryAcci[2])
+print(casesInj)
+
+
+#List	the	injuries	by	day
+tapply(dfMd$INJURY =="YES", dfMd$DAY_OF_WEEK, length)
+
+
+```

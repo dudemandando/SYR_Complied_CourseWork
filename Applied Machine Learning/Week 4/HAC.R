@@ -1,0 +1,28 @@
+#Using the "classes-to-clusters evaluation," run HierarchicalClusterer on the Iris data using single linkage and complete linkage.
+#Which one led to better result? Can you explain why?
+
+iris_Data <- read.csv("C:\\Users\\danbu\\Desktop\\Applied Machine Learning\\Week 4\\iris.csv")
+irisNoLabs <- iris_Data[,1:4]
+
+str(irisNoLabs)
+
+scaledIris <- as.data.frame(scale(irisNoLabs))
+
+summary(scaledIris)
+
+dist_mat <- dist(scaledIris, method='euclidean')
+
+hclust_complete <- hclust(dist_mat, method = 'complete')
+
+ut_com <- cutree(hclust_complete, k = 5)
+plot(hclust_complete)
+rect.hclust(hclust_complete , k = 5, border = 2:6)
+abline(h = 5, col = 'red')
+
+hclust_single <- hclust(dist_mat, method='single')
+ut_single <- cutree(hclust_single, k = 5)
+plot(hclust_single)
+rect.hclust(hclust_single , k = 5, border = 2:6)
+abline(h = 3, col = 'red')
+
+

@@ -1,0 +1,137 @@
+---
+title: "IST687 "
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dan Burke
+## Homework 2 - Writing	functions	and	doing	some	initial	data	analysis
+## Assignment Due: 7/20/2021 
+## Submitted: 7/19/2021
+
+\newpage
+
+## Explore	the	mtcars	data set	(which	is	already	included	in	R). Copy	the	mtcars	data set	into	a new	variable	(called	it	myCars),	so	that	if	you	mess	up,	you	can start	again	very	easily	(by	copying	mtcars	into	myCars	again).
+
+```{r myCars}
+myCars<-data.frame(mtcars)
+
+```
+## Step	1:	What	is	the	hp	(hp	stands	for	“horse	power”)
+
+## 1) What	is	the	highest	hp?
+```{r horsepower}
+ max(myCars$hp)
+
+
+```
+
+
+## 2) Which	car	has	the	highest	hp?
+``` {r Car that possesses highest hp}
+rownames(myCars)[which.max(myCars$hp)]
+
+```
+## Step	2:	Explore	mpg	(mpg	stands	for	“miles	per	gallon”)		
+
+3) What	is	the	highest	mpg?
+```{r Highest Mpg}
+max(myCars$mpg)
+
+```
+## 4) Which	car	has	the	highest	mpg?
+```{r Car with Highest Mpg}
+
+rownames(myCars)[which.max(myCars$mpg)]
+
+```
+## 5) Create	a	sorted	dataframe,	based	on	mpg
+
+Below is sorted by ascending MPG.
+```{r Sorting by Mpg}
+myCars[order(myCars$mpg),]
+
+```
+
+
+## Step	3:	Which	car	has	the	“best”	combination	of	mpg	and	hp?
+
+## 6) What	logic	did	you	use?
+
+There are multiple ways arrive at a conclusion of which vehicle offers the "best" combination of mpg and hp.
+
+First, we can find the vehicle which produces the greatest marginal mileage per unit of horsepower. I did this by determining each vehicle's ratio of MPG/HP and adding a new column to the data frame. This informs us of the marginal increase in MPG per unit of horsepower. 
+
+The second approach is to determine the relationship between 1 unit of horsepower per MPG. I explore this by determining each vehicle's ratio of HP/MPG and adding to the data frame. 
+
+
+
+```{r Calulate MPG per 1 horse power and horse power per 1 MPG}
+#Instantiate Two new Vectors to Contain Ratio's of MPG/HP & HP/MPG
+mpgToHorsePowerRat <- c()
+horsePowerToMpgRat <- c()
+
+#Iterate through 'myCars' calculate the MPG/HP & HP/MPG Ratios
+for(i in 1:nrow(myCars)){
+  mpgHpPowerratio <- (myCars$mpg[i]/myCars$hp[i])
+  hpToMpgPowerRatio <- (myCars$hp[i]/myCars$mpg[i])
+  #Add created ratios to vectors, organized by index
+  mpgToHorsePowerRat[i]<- mpgHpPowerratio
+  horsePowerToMpgRat[i]<- hpToMpgPowerRatio
+
+}
+
+#Add new column to 'myCars' from vectors to containing ratio's of MPG/HP & HP/MPG
+myCars <- cbind(myCars, mpgToHorsePowerRat)
+myCars <- cbind(myCars, horsePowerToMpgRat)
+
+```
+Each of these approaches identifies a different vehicle. In this instance, we would need to know more information from the audience of their requirements in order to decide between the two vehicles, which leads us to another method to identify the vehicle which has the most optimal relationship between HP and MPG. 
+
+```{r Differing Vehicles Identified}
+rownames(myCars)[which.max(myCars$mpgToHorsePowerRat)]
+rownames(myCars)[which.max(myCars$horsePowerToMpgRat)]
+
+```
+
+
+If we are unable to gather information on the data audience's requirements, there is a third approach that will give us a most generalized answer. First we normalize all values contained within the HP and MPG columns. This allows us to view the data through the lens of a common scale. Working with this common scale (mean MPG and mean HP as zero) we can combine these values to create an overall "score", then all we need to find is the maximum combined normalized value (below).
+
+
+```{r Find Vehicle with highest MPG to HP ratio}
+#Here we normalize the data, so that the mean is 0 
+#with a standard deviation of 1. I do this to standardize the data 
+
+nMpg <- scale(myCars$mpg)
+nHp <- scale(myCars$hp)
+
+#Add new columns to 'myCars' from vectors to containing ratio's 
+#of MPG/HP, HP/MPG, and normalized MPG & HP 
+myCars <- cbind(myCars, mpgToHorsePowerRat, horsePowerToMpgRat, nMpg,nHp )
+
+#Create a new column of the combination of Normalized MPG & Normalized HP
+nMpgHp <-(nMpg + nHp )
+myCars <- cbind(myCars, nMpgHp)
+
+```
+## 7) Which	car?
+
+When we find the maximum normalized combined value of horse power and miles per gallon, we arrive at the conclusion that the most optimal vehicle is the Maserati Bora. 
+
+```{r Normalized Maximum}
+myCars[which.max(myCars$nMpgHp),]
+
+```
+
+## Reference: All vehicles sorted by descending combined normalized MPG and normalized HP.
+```{r All Vehicles sorted by combined normalized data (descending)}
+myCars[order(-myCars$nMpgHp),]
+ 
+```
+
+
+
+

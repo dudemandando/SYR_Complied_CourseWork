@@ -1,0 +1,20 @@
+---
+title: "Rows and Columns"
+author: "Dan Burke"
+date: "7/19/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r Rows and Columns}
+name <- c("Dad","Mom","Sis","Bro","Dog")
+age <- c(43,42,12,8,5)
+gender <- c("Male","Female","Female","Male", "Female")
+weight <- c(188,136, 83, 61, 44)
+
+family <- cbind(name,age,gender,weight)
+family
+
+```

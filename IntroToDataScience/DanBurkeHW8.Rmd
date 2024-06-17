@@ -1,0 +1,142 @@
+---
+title: "IST 687 – Homework 8 Making	Predictions"
+author: "Dan Burke"
+date: "9/18/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Assignment Due: 8/23/2021 
+# Submitted: 9/19/2021
+
+\newpage
+
+# 1. Read	in	data	from	the	following	URL:	
+http://college.cengage.com/mathematics/brase/understandable_statistics/7e/stud
+ents/datasets/mlr/excel/mlr01.xls
+
+If	you	view	this	in	a	spreadsheet,	you	will	find	that	four	columns	of	a	small	dataset.	
+The	first	column	shows	the	number	of	fawn	in	a	given	spring	(fawn	are	baby	
+Antelope).	
+
+The	second	column	shows	the	population	of	adult	antelope,	the	third	
+shows	the	annual	precipitation	that	year,	and	finally,	the	last	column	shows	how	bad	
+the	winter	was	during	that	year.
+
+# 2. You	have	the	option	of	saving	the	file	save	this	file	to	your	computer	and	read	it	into R,	or reading the	data	directly	from	the	web	into	a	data	frame.
+
+I decided to download and read from the same directory as this file is located. 
+
+```{r Read Data}
+
+#install.packages("readxl")
+library("readxl")
+library(ggplot2)
+
+rawdata <- read_excel("C:\\Users\\danbu\\Desktop\\IntroToDataScience\\mlr01.xls")
+
+antelopeData <- rawdata
+colnames(antelopeData) <- c("springFawn", "adultPop", "annualPrecip", "winterbadness")
+```
+
+
+# 3. You	should	inspect	the	data	using	the	str()	command	to	make	sure	that	all	of	the	cases	have	been	read	in	(n=8	years	of observations)	and	that	there	are	four variables.	
+
+```{r Inspeact Data}
+str(antelopeData)
+
+
+```
+
+
+
+
+
+
+
+# 4. Create	bivariate	plots	of	number	of	baby	fawns versus	adult	antelope	population, the	precipitation	that	year,	and	the	severity	of	the	winter.	
+Your	code	should	produce	three	separate	plots.	Make	sure	the	Y-axis	and	X-axis	are	labeled.	Keeping	in	mind	that the	number	of	fawns is	the	outcome	(or	dependent)	variable,	which	axis	should it	go	on	in	your	plots?
+```{r Bivariate Plots}
+
+#Baby Fawns vs. Adult Antelope
+plot(antelopeData$adultPop, antelopeData$springFawn, main = "Baby Fawns vs. Adult Antelope", xlab = "AdultPopulation", ylab = "Baby Fawns")
+
+#Baby Fawns vs. Precipitation 
+plot(antelopeData$annualPrecip,antelopeData$springFawn,  main = "Baby Fawns vs. Precipitation ", xlab = "Annual Precipitation", ylab = "Baby Fawns")
+
+#Baby Fawns vs. Winter Severity
+plot(antelopeData$winterbadness,antelopeData$springFawn, main = "Baby Fawns vs. Annual Precipitation ", xlab = "Winter Serverity", ylab = "Baby Fawns")
+
+```
+
+
+# 5. Next,	create	three	regression	models	of	increasing	complexity	using	lm().	
+
+
+## In	the	first model,	predict	the	number	of	fawns	from	the	severity	of	the	winter.	
+```{r Model One}
+
+modelFawnsWinter <- lm(formula = springFawn ~ winterbadness, data=antelopeData)
+summary(modelFawnsWinter)
+g <- ggplot(antelopeData, aes(y=springFawn, x=winterbadness)) + geom_point()
+g + stat_smooth(method = lm, "col" = "red") + ylab("Spring Fawn") + xlab("Winter Severity")
+g
+
+```
+
+
+## In	the	second model,	predict	the	number	of	fawns from	two	variables	(one	should	be	the	severity	of	the	winter).	
+```{r Model Two}
+
+model2FawnsAdultsWinter <- lm(formula = springFawn ~ winterbadness + adultPop, data=antelopeData)
+summary(model2FawnsAdultsWinter)
+g <- ggplot(antelopeData, aes(y=springFawn, x=adultPop)) + geom_point() + ylab("Spring Fawn") + xlab("Antelope Adult Population")
+g + stat_smooth(method = lm, "col" = "red")
+g
+
+```
+
+
+## In	the	third	model	predict	the	number	of	fawns from	the	three	other	variables.	
+```{r Model Three}
+
+model3FawnsAllData <- lm(formula = springFawn ~ winterbadness + adultPop + annualPrecip, data=antelopeData)
+thirdModelSum <-summary(model3FawnsAllData)
+thirdModelSum
+g <- ggplot(antelopeData, aes(y=springFawn, x=annualPrecip)) + geom_point()+ ylab("Spring Fawn") + xlab("Annual Precipitation")
+g + stat_smooth(method = lm, "col" = "red") 
+g
+
+
+```
+
+
+
+## Which	model	works	best?	
+ After developing the three models, the last ("model3FawnsAllData") proved to be the "best" model as it possesses the highest "Adjusted R-squared" value of 0.955. This model is more accurate as it incorporates the most data (adult population, annual precipitation and winter severity). We are also able to see that as we added columns of our data frame to the model, we observed an increasing adjusted R-squared value, this indicates that as we added data we gained a more accurate model, however this does not mean that should we gain new data that new data added to the data frame will increase prediction accuracy. We would expect it will be we cannot be certain. 
+
+
+## Which	of	the	predictors	are	statistically	significant	in	each	model? If	you	wanted	to	create	the	most	parsimonious	model	(i.e.,	the	one	that	did	the	best	job	with	the	fewest	predictors),	what	would	it	contain?
+
+Below are the P values for each of the coefficients. Here we are able to observe that the "winterbadness" (severity), possesses the highest value. This shows us that if we are to create the most parsimonious model, we would choose the second model which contains the columns "springfawns" and "winterbadness" (winter severity).
+
+```{r signifigant predictors}
+# Display P-Values 
+thirdModelSum$coef[,4]
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
